@@ -83,7 +83,7 @@ cdef class BinaryRW(object):
             # buf + buf_size >= buf + cur + data_size + new_data_len -->
             #   buf_size - data_size >= cur + new_data_len -->
             #     cap - cur >= new_data_len
-            if cap < len(new_data) or cap < 256:
+            if cap < len(new_data):
                 self.rbuf.move_to_start()
             memcpy(self.rbuf.buf + self.rbuf.cur + self.rbuf.data_size,
                 <byte*>new_data, len(new_data))
