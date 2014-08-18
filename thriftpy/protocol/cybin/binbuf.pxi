@@ -27,7 +27,7 @@ cdef class Buffer(object):
         self.cur = 0
         self.data_size = 0
 
-    cdef void grow(self, int min_size):
+    cdef int grow(self, int min_size):
         if min_size <= self.buf_size:
             return
 
@@ -36,12 +36,14 @@ cdef class Buffer(object):
             multiples += 1
 
         cdef int new_size = self.buf_size * multiples
-        # TODO malloc check
         cdef byte *new_buf = <byte*>malloc(new_size)
+        if new_buf == NULL:
+            return -1
         memcpy(new_buf + self.cur, self.buf + self.cur, self.data_size)
         free(self.buf)
         self.buf_size = new_size
         self.buf = new_buf
+        return 0
 
 
 class BufferError(Exception):
@@ -67,7 +69,8 @@ cdef class BinaryRW(object):
 
     cdef ensure_rbuf(self, int size):
         if size > self.rbuf.buf_size:
-            self.rbuf.grow(size)
+            if self.rbuf.grow(size) != 0:
+                raise MemoryError('grow read buffer fail')
 
         cdef int cap
         cdef bytes new_data
@@ -148,7 +151,8 @@ cdef class BinaryRW(object):
 
         if cap < size:
             if size > self.wbuf.buf_size:
-                self.wbuf.grow(size)
+                if self.wbuf.grow(size) != 0:
+                    raise MemoryError('grow write buffer fail')
             self.write_flush()
 
     cdef write_byte(self, byte n):
